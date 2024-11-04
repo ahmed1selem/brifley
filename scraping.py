@@ -46,7 +46,20 @@ def init (url):
              cleaned, title,img = defult(url)
     return cleaned, title,img
 
+def reqinti(type,url):
+    middleware = ScrapeOpsFakeBrowserHeaderAgentMiddleware()
+    url = url
 
+    # Create your request object (assuming you're using requests library)
+    request = requests.Request(type, url)
+
+    # Process the request with the middleware
+    middleware.process_request(request)
+
+    # Create a session and send the request
+    with requests.Session() as session:
+        response = session.send(request.prepare())
+    return response
 def defult(url):
     middleware = ScrapeOpsFakeBrowserHeaderAgentMiddleware()
     url = url
@@ -65,30 +78,26 @@ def defult(url):
     return extract.cleaned_text, extract.title ,"   "
 
 def youm7(url):
-    middleware = ScrapeOpsFakeBrowserHeaderAgentMiddleware()
-    url = url
 
-    # Create your request object (assuming you're using requests library)
-    request = requests.Request('GET', url)
-
-    # Process the request with the middleware
-    middleware.process_request(request)
-
-    # Create a session and send the request
-    text = ""
-    with requests.Session() as session:
-        response = session.send(request.prepare())
+    response = reqinti("GET",url)
     g = Goose()
     extract = g.extract(raw_html=response.text)
     soup = BeautifulSoup(response.text, 'html.parser')
 
-    article_img = soup.find('img', class_="img-responsive")["src"]
+    article_img = soup.find('div', class_="img-cont")
+    if article_img:
+        article_img=article_img.find("img",class_="img-responsive")["src"]
+    else:
+        article_img="https://img.youm7.com/images/graphics/logoyoum7.png"
+   
     return extract.cleaned_text, extract.title, article_img
 
 def skynewsarabia(url):
     
 
   if url:
+    url = f"""https://webcache.googleusercontent.com/search?q=cache:{url}"""
+
     middleware = ScrapeOpsFakeBrowserHeaderAgentMiddlewareSL()
     options = Options()
 
@@ -130,21 +139,7 @@ def skynewsarabia(url):
 
 
 def english_ahram(url):
-    url = f"""https://webcache.googleusercontent.com/search?q=cache:{url}"""
-
-    # Initialize the middleware
-    middleware = ScrapeOpsFakeBrowserHeaderAgentMiddleware()
-    url = url
-
-    # Create your request object (assuming you're using requests library)
-    request = requests.Request('GET', url)
-
-    # Process the request with the middleware
-    middleware.process_request(request)
-
-    # Create a session and send the request
-    with requests.Session() as session:
-        response = session.send(request.prepare())
+    response = reqinti("GET", url)
     g = Goose()
     extract = g.extract(raw_html=response.text)
     soup = BeautifulSoup(response.text, 'html.parser')
@@ -156,32 +151,39 @@ def english_ahram(url):
 
 
 def almasryalyoum(url):
-    url = f"""https://webcache.googleusercontent.com/search?q=cache:{url}"""
+    if url:
 
-    # Initialize the middleware
-    middleware = ScrapeOpsFakeBrowserHeaderAgentMiddleware()
-    url = url
+        middleware = ScrapeOpsFakeBrowserHeaderAgentMiddlewareSL()
+        options = Options()
 
-    # Create your request object (assuming you're using requests library)
-    request = requests.Request('GET', url)
+        # Process request to add fake browser headers
+        middleware.process_request(options)
 
-    # Process the request with the middleware
-    middleware.process_request(request)
+        # Initialize the WebDriver with the custom options
+        driver = webdriver.Chrome()
 
-    # Create a session and send the request
-    with requests.Session() as session:
-        response = session.send(request.prepare())
-    g = Goose()
-    extract = g.extract(raw_html=response.text)
-    soup = BeautifulSoup(response.text, 'html.parser')
+        # Open the webpage
+        driver.get(url)
+        article_text = ""
+        # Wait for the main image to load
+        try:
+            WebDriverWait(driver, 10)
 
-    article_img_div = soup.find('div', class_='ARTimg')
+            # Get the page source after the content has loaded
+            html_content = driver.page_source
 
-# Find the img tag within the div
-    img_tag = article_img_div.find('img')
+            # Parse the HTML content with BeautifulSoup
+            soup = BeautifulSoup(html_content, 'html.parser')
 
-# Extract the src attribute
-    img_src = img_tag['src'] if img_tag else None
+            g = Goose()
+            extract = g.extract(raw_html=html_content)
+            article_img_div = soup.find('div', class_='articleimg')
+            img_tag = article_img_div.find('img')
+
+            img_src = img_tag['src'] if img_tag else None
+        finally:
+            # Close the WebDriver
+            driver.quit()
     return extract.cleaned_text, extract.title,img_src
 
 
@@ -278,9 +280,11 @@ def dailynewsegypt(url):
     extract = g.extract(raw_html=response.text)
     soup = BeautifulSoup(response.text, 'html.parser')
 
-    article_img = soup.find('div',class_="featured-lightbox-trigger").find("img")["src"]
-
-
+    article_img = soup.find('div',class_="featured-lightbox-trigger").find("img")
+    if article_img:
+        article_img=article_img["src"]
+    else:
+        article_img="https://d1b3667xvzs6rz.cloudfront.net/2023/10/Dailynews-logo.png"
     return extract.cleaned_text, extract.title,article_img
 
 
@@ -346,12 +350,12 @@ def egyptianstreets(url):
     g = Goose()
     extract = g.extract(raw_html=response.text)
     soup = BeautifulSoup(response.text, 'html.parser')
-    article_img = soup.find('img', class_="attachment-foxiz_crop_o1 size-foxiz_crop_o1 wp-post-image")["src"]
+    article_img = soup.find('img', class_="wp-post-image")
     if article_img:
         article_img=article_img["src"]
     else:
-        article_img="https://d1b3667xvzs6rz.cloudfront.net/2023/10/Dailynews-logo.png"
-
+        article_img="https://egyptianstreets.com/wp-content/uploads/2022/07/egysinai.jpg"
+        
     return extract.cleaned_text, extract.title,article_img
 
 

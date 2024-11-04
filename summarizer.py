@@ -18,7 +18,7 @@ def summarize(article):
 
     summary_ids = model.generate(inputs, max_length=150, min_length=50, length_penalty=2.0, num_beams=4, early_stopping=True)
 
-    summary_ids = summary_ids.to("cpu")
+    summary_ids = summary_ids.to(device)
 
     summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
     summary=format(summary)

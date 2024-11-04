@@ -11,7 +11,7 @@ from urllib.parse import urlencode
 
 class ScrapeOpsFakeBrowserHeaderAgentMiddlewareSL:
     def __init__(self, scrapeops_num_results=None):
-        self.scrapeops_api_key = 'c5138c2f-a5a8-4bd3-938c-b71ad749905d'
+        self.scrapeops_api_key = '483dd2ae-8c6f-4f6a-82a6-82317e7d0ac0'
         self.scrapeops_endpoint = 'http://headers.scrapeops.io/v1/browser-headers'
         self.scrapeops_num_results = scrapeops_num_results
         self.headers_list = []
@@ -36,3 +36,4 @@ class ScrapeOpsFakeBrowserHeaderAgentMiddlewareSL:
         for header, value in random_browser_header.items():
             if header and value:
                 options.add_argument(f'{header}={value}')
+                print(header)

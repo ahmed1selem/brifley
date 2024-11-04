@@ -31,12 +31,14 @@ englishCategories = {
 def get_cat(paragrapgh):
     article=paragrapgh
     language = detect(article)
-    count_vectorizer,tfidf_transformer,model=load_resources(language)
+    if language=="ar" or language=="en" :
+         count_vectorizer,tfidf_transformer,model=load_resources(language)
+    else:
+        return "lang not supported"
     articleCounts = count_vectorizer.transform([article])
     articleTFIDF = tfidf_transformer.transform(articleCounts)
     predicted = model.predict(articleTFIDF)
     if language=="ar":
-
         return arabicCategories[predicted[0]]
     elif language=="en":
         return englishCategories[predicted[0]]

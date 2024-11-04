@@ -5,7 +5,7 @@ from urllib.parse import urlencode
 
 class ScrapeOpsFakeBrowserHeaderAgentMiddleware:
     def __init__(self, scrapeops_num_results=None):
-        self.scrapeops_api_key = 'c5138c2f-a5a8-4bd3-938c-b71ad749905d'
+        self.scrapeops_api_key = '483dd2ae-8c6f-4f6a-82a6-82317e7d0ac0'
         self.scrapeops_endpoint = 'http://headers.scrapeops.io/v1/browser-headers'
         self.scrapeops_num_results = scrapeops_num_results
         self.headers_list = []
@@ -19,6 +19,7 @@ class ScrapeOpsFakeBrowserHeaderAgentMiddleware:
         json_response = response.json()
         self.headers_list = json_response.get('result', [])
 
+
     def _get_random_browser_header(self):
         random_index = randint(0, len(self.headers_list) - 1)
         return self.headers_list[random_index]
@@ -29,7 +30,7 @@ class ScrapeOpsFakeBrowserHeaderAgentMiddleware:
         headers = {
             'accept-language': random_browser_header['accept-language'],
             'sec-fetch-user': random_browser_header['sec-fetch-user'],
-            'sec-fetch-mod': random_browser_header['sec-fetch-mod'],
+            'sec-fetch-mod': random_browser_header.get('sec-fetch-mod', 'navigate'),
             'sec-fetch-site': random_browser_header['sec-fetch-site'],
             'sec-ch-ua-platform': random_browser_header['sec-ch-ua-platform'],
             'sec-ch-ua-mobile': random_browser_header['sec-ch-ua-mobile'],
