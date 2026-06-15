@@ -8,15 +8,17 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
 from BrowserInit import ScrapeOpsFakeBrowserHeaderAgentMiddlewareSL
-
-from bs4 import BeautifulSoup
-from goose3 import Goose
-import requests
 from random import randint
 from urllib.parse import urlencode
-def init (url):
-    fetch_functions = {
+import time
+import os
+from proxy_manager import get_random_proxy
 
+# Default timeout for all HTTP requests (seconds)
+REQUEST_TIMEOUT = 15
+def init(url):
+    """Route a URL to its site-specific scraper, or fall back to the default."""
+    fetch_functions = {
         "skynewsarabia": skynewsarabia,
         "english.ahram.org": english_ahram,
         "almasryalyoum": almasryalyoum,
@@ -30,52 +32,86 @@ def init (url):
         "bbc": bbc,
         "cnn.com": cnn,
         "aljazeera": aljazeera,
-        "youm7":youm7,
-        "albawabhnews":albawabhnews,
-        "foxnews":foxnews,
-        "theguardian":theguardian,
-        "reuters":reuters,
-        "codinghorror":codinghorror
+        "youm7": youm7,
+        "albawabhnews": albawabhnews,
+        "foxnews": foxnews,
+        "theguardian": theguardian,
+        "reuters": reuters,
+        "codinghorror": codinghorror
     }
 
+    # Find the matching scraper for this URL.
+    # The original for/else logic had a Python gotcha: the else clause
+    # ran on every non-matching iteration, not just when no match was found.
     for keyword, fetch_function in fetch_functions.items():
         if keyword.lower() in url.lower():
-             cleaned, title,img = fetch_functions[keyword](url)
-             break
-        else:
-             cleaned, title,img = defult(url)
-    return cleaned, title,img
+            cleaned, title, img = fetch_function(url)
+            return cleaned, title, img
 
-def reqinti(type,url):
+    # No keyword matched — use the default scraper
+    return defult(url)
+
+def reqinti(type, url):
     middleware = ScrapeOpsFakeBrowserHeaderAgentMiddleware()
-    url = url
 
-    # Create your request object (assuming you're using requests library)
     request = requests.Request(type, url)
-
-    # Process the request with the middleware
     middleware.process_request(request)
 
-    # Create a session and send the request
+    use_proxy = os.getenv("USE_PROXY", "true").lower() == "true"
+    max_retries = 3 if use_proxy else 1
+
+    for attempt in range(max_retries):
+        try:
+            # Timer for Rate Limiting
+            time.sleep(randint(1, 3))
+            with requests.Session() as session:
+                if use_proxy:
+                    proxy_ip = get_random_proxy()
+                    if proxy_ip:
+                        proxies = {'http': f"http://{proxy_ip}", 'https': f"http://{proxy_ip}"}
+                        session.proxies.update(proxies)
+                response = session.send(request.prepare(), timeout=REQUEST_TIMEOUT)
+                return response
+        except Exception as e:
+            print(f"[reqinti] Proxy attempt {attempt+1} failed: {e}")
+            pass
+
+    # Safe fallback direct connection
     with requests.Session() as session:
-        response = session.send(request.prepare())
-    return response
+        return session.send(request.prepare(), timeout=REQUEST_TIMEOUT)
+
 def defult(url):
     middleware = ScrapeOpsFakeBrowserHeaderAgentMiddleware()
-    url = url
 
-    # Create your request object (assuming you're using requests library)
     request = requests.Request('GET', url)
-
-    # Process the request with the middleware
     middleware.process_request(request)
 
-    # Create a session and send the request
-    with requests.Session() as session:
-        response = session.send(request.prepare())
+    use_proxy = os.getenv("USE_PROXY", "true").lower() == "true"
+    max_retries = 3 if use_proxy else 1
+
+    response = None
+    for attempt in range(max_retries):
+        try:
+            time.sleep(randint(1, 3))
+            with requests.Session() as session:
+                if use_proxy:
+                    proxy_ip = get_random_proxy()
+                    if proxy_ip:
+                        proxies = {'http': f"http://{proxy_ip}", 'https': f"http://{proxy_ip}"}
+                        session.proxies.update(proxies)
+                response = session.send(request.prepare(), timeout=REQUEST_TIMEOUT)
+                break
+        except Exception as e:
+            print(f"[defult] Proxy attempt {attempt+1} failed: {e}")
+            pass
+
+    if not response:
+        with requests.Session() as session:
+            response = session.send(request.prepare(), timeout=REQUEST_TIMEOUT)
+
     g = Goose()
     extract = g.extract(raw_html=response.text)
-    return extract.cleaned_text, extract.title ,"   "
+    return extract.cleaned_text, extract.title, "   "
 
 def youm7(url):
 
@@ -96,7 +132,7 @@ def skynewsarabia(url):
     
 
   if url:
-    url = f"""https://webcache.googleusercontent.com/search?q=cache:{url}"""
+    
 
     middleware = ScrapeOpsFakeBrowserHeaderAgentMiddlewareSL()
     options = Options()
@@ -104,8 +140,16 @@ def skynewsarabia(url):
     # Process request to add fake browser headers
     middleware.process_request(options)
 
+    # Timer for Rate Limiting
+    time.sleep(randint(1, 3))
+
+    if os.getenv("USE_PROXY", "true").lower() == "true":
+        proxy_ip = get_random_proxy()
+        if proxy_ip:
+            options.add_argument(f'--proxy-server=http://{proxy_ip}')
+
     # Initialize the WebDriver with the custom options
-    driver = webdriver.Chrome()  
+    driver = webdriver.Chrome(options=options)  
 
     # Open the webpage
     driver.get(url)
@@ -159,8 +203,16 @@ def almasryalyoum(url):
         # Process request to add fake browser headers
         middleware.process_request(options)
 
+        # Timer for Rate Limiting
+        time.sleep(randint(1, 3))
+
+        if os.getenv("USE_PROXY", "true").lower() == "true":
+            proxy_ip = get_random_proxy()
+            if proxy_ip:
+                options.add_argument(f'--proxy-server=http://{proxy_ip}')
+
         # Initialize the WebDriver with the custom options
-        driver = webdriver.Chrome()
+        driver = webdriver.Chrome(options=options)
 
         # Open the webpage
         driver.get(url)
@@ -188,21 +240,7 @@ def almasryalyoum(url):
 
 
 def shorouknews(url):
-    # url=f"""https://webcache.googleusercontent.com/search?q=cache:{url}"""
-
-    # Initialize the middleware
-    middleware = ScrapeOpsFakeBrowserHeaderAgentMiddleware()
-    url = url
-
-    # Create your request object (assuming you're using requests library)
-    request = requests.Request('GET', url)
-
-    # Process the request with the middleware
-    middleware.process_request(request)
-
-    # Create a session and send the request
-    with requests.Session() as session:
-        response = session.send(request.prepare())
+    response = reqinti("GET", url)
     g = Goose()
     extract = g.extract(raw_html=response.text)
     soup = BeautifulSoup(response.text, 'html.parser')
@@ -213,21 +251,7 @@ def shorouknews(url):
 
 
 def elwatannews(url):
-    # url=f"""https://webcache.googleusercontent.com/search?q=cache:{url}"""
-
-    # Initialize the middleware
-    middleware = ScrapeOpsFakeBrowserHeaderAgentMiddleware()
-    url = url
-
-    # Create your request object (assuming you're using requests library)
-    request = requests.Request('GET', url)
-
-    # Process the request with the middleware
-    middleware.process_request(request)
-
-    # Create a session and send the request
-    with requests.Session() as session:
-        response = session.send(request.prepare())
+    response = reqinti("GET", url)
     soup = BeautifulSoup(response.text, 'html.parser')
 
     article_subject_div = soup.find('div', class_='article-subject')
@@ -245,15 +269,7 @@ def elwatannews(url):
 
 
 def egyptindependent(url):
-    middleware = ScrapeOpsFakeBrowserHeaderAgentMiddleware()
-    url = url
-
-    request = requests.Request('GET', url)
-
-    middleware.process_request(request)
-
-    with requests.Session() as session:
-        response = session.send(request.prepare())
+    response = reqinti("GET", url)
     g = Goose()
     extract = g.extract(raw_html=response.text)
     soup = BeautifulSoup(response.text, 'html.parser')
@@ -267,15 +283,7 @@ def egyptindependent(url):
 
 
 def dailynewsegypt(url):
-    middleware = ScrapeOpsFakeBrowserHeaderAgentMiddleware()
-    url = url
-
-    request = requests.Request('GET', url)
-
-    middleware.process_request(request)
-
-    with requests.Session() as session:
-        response = session.send(request.prepare())
+    response = reqinti("GET", url)
     g = Goose()
     extract = g.extract(raw_html=response.text)
     soup = BeautifulSoup(response.text, 'html.parser')
@@ -289,15 +297,7 @@ def dailynewsegypt(url):
 
 
 def masrawy(url):
-    middleware = ScrapeOpsFakeBrowserHeaderAgentMiddleware()
-    url = url
-
-    request = requests.Request('GET', url)
-
-    middleware.process_request(request)
-    article_img=None
-    with requests.Session() as session:
-        response = session.send(request.prepare())
+    response = reqinti("GET", url)
     g = Goose()
     extract = g.extract(raw_html=response.text)
     soup = BeautifulSoup(response.text, 'html.parser')
@@ -315,20 +315,7 @@ def masrawy(url):
 
 
 def madamasr(url):
-    url = f"""https://webcache.googleusercontent.com/search?q=cache:{url}"""
-
-    middleware = ScrapeOpsFakeBrowserHeaderAgentMiddleware()
-    url = url
-
-    # Create your request object (assuming you're using requests library)
-    request = requests.Request('GET', url)
-
-    # Process the request with the middleware
-    middleware.process_request(request)
-
-    # Create a session and send the request
-    with requests.Session() as session:
-        response = session.send(request.prepare())
+    response = reqinti("GET", url)
     soup = BeautifulSoup(response.text, 'html.parser')
     # Find the div with class "article_body"
     article_body = soup.find('div', class_='article_body').get_text()
@@ -338,15 +325,7 @@ def madamasr(url):
 
 
 def egyptianstreets(url):
-    middleware = ScrapeOpsFakeBrowserHeaderAgentMiddleware()
-    url = url
-
-    request = requests.Request('GET', url)
-
-    middleware.process_request(request)
-
-    with requests.Session() as session:
-        response = session.send(request.prepare())
+    response = reqinti("GET", url)
     g = Goose()
     extract = g.extract(raw_html=response.text)
     soup = BeautifulSoup(response.text, 'html.parser')
@@ -360,16 +339,7 @@ def egyptianstreets(url):
 
 
 def bbc(url):
-    middleware = ScrapeOpsFakeBrowserHeaderAgentMiddleware()
-    url = url
-
-      # Create your request object (assuming you're using requests library)
-    request = requests.Request('GET', url)
-
-    # Process the request with the middleware
-    middleware.process_request(request)
-    with requests.Session() as session:
-        response = session.send(request.prepare(),timeout=30)
+    response = reqinti("GET", url)
     soup = BeautifulSoup(response.text, 'html.parser')
     # Find the div with class "article_body"
     article_body = soup.find_all(attrs={"data-component": "text-block"})
@@ -414,16 +384,7 @@ def bbc(url):
 
 
 def cnn(url):
-   
-    middleware = ScrapeOpsFakeBrowserHeaderAgentMiddleware()
-    url = url
-
-    request = requests.Request('GET', url)
-
-    middleware.process_request(request)
-
-    with requests.Session() as session:
-        response = session.send(request.prepare())
+    response = reqinti("GET", url)
     g = Goose()
     extract = g.extract(raw_html=response.text)
     soup = BeautifulSoup(response.text, 'html.parser')
@@ -456,19 +417,8 @@ def cnn(url):
 
 
 def aljazeera(url):
-    middleware = ScrapeOpsFakeBrowserHeaderAgentMiddleware()
-    url = url
-
-    # Create your request object (assuming you're using requests library)
-    request = requests.Request('GET', url)
-
-    # Process the request with the middleware
-    middleware.process_request(request)
-
-    # Create a session and send the request
+    response = reqinti("GET", url)
     text = ""
-    with requests.Session() as session:
-        response = session.send(request.prepare())
     soup = BeautifulSoup(response.text, 'html.parser')
     # Find the div with class "article_body"
     article_body = soup.find('div', class_='wysiwyg')
@@ -484,15 +434,7 @@ def aljazeera(url):
     return text, title,img
     
 def albawabhnews(url):
-    middleware = ScrapeOpsFakeBrowserHeaderAgentMiddleware()
-    url = url
-
-    request = requests.Request('GET', url)
-
-    middleware.process_request(request)
-
-    with requests.Session() as session:
-        response = session.send(request.prepare())
+    response = reqinti("GET", url)
     g = Goose()
     extract = g.extract(raw_html=response.text)
     soup = BeautifulSoup(response.text, 'html.parser')
@@ -516,15 +458,7 @@ def albawabhnews(url):
     return (text, extract.title,article_img)
     
 def foxnews(url):
-    middleware = ScrapeOpsFakeBrowserHeaderAgentMiddleware()
-    url = url
-
-    request = requests.Request('GET', url)
-
-    middleware.process_request(request)
-
-    with requests.Session() as session:
-        response = session.send(request.prepare())
+    response = reqinti("GET", url)
     g = Goose()
     extract = g.extract(raw_html=response.text)
     soup = BeautifulSoup(response.text, 'html.parser')
@@ -547,15 +481,7 @@ def foxnews(url):
  
  
 def theguardian(url):
-    middleware = ScrapeOpsFakeBrowserHeaderAgentMiddleware()
-    url = url
-
-    request = requests.Request('GET', url)
-
-    middleware.process_request(request)
-
-    with requests.Session() as session:
-        response = session.send(request.prepare())
+    response = reqinti("GET", url)
     g = Goose()
     extract = g.extract(raw_html=response.text)
     soup = BeautifulSoup(response.text, 'html.parser')
@@ -576,15 +502,7 @@ def theguardian(url):
  
  
 def reuters(url):
-    middleware = ScrapeOpsFakeBrowserHeaderAgentMiddleware()
-    url = url
-
-    request = requests.Request('GET', url)
-
-    middleware.process_request(request)
-
-    with requests.Session() as session:
-        response = session.send(request.prepare())
+    response = reqinti("GET", url)
     g = Goose()
     extract = g.extract(raw_html=response.text)
     soup = BeautifulSoup(response.text, 'html.parser')
@@ -605,15 +523,7 @@ def reuters(url):
     return (text, extract.title,article_img)
  
 def codinghorror(url):
-    middleware = ScrapeOpsFakeBrowserHeaderAgentMiddleware()
-    url = url
-
-    request = requests.Request('GET', url)
-
-    middleware.process_request(request)
-
-    with requests.Session() as session:
-        response = session.send(request.prepare())
+    response = reqinti("GET", url)
     g = Goose()
     extract = g.extract(raw_html=response.text)
     soup = BeautifulSoup(response.text, 'html.parser')

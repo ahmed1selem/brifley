@@ -1,1 +1,33 @@
-".text test.py .idea\ __pycache__\ !*.py !*/" 
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# IDEs
+.idea/
+.vscode/
+
+# Project specifics
+briefley.db
+briefley.db-journal
+briefley_session.session
+*.csv
+*.pkl
+scratch/
+embadder/
+classifier/
+chatbot-frontend/
+reponce.txt
+time.txt
+read.txt
+problems with clustring.txt
+*.xml
