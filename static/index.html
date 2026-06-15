@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Briefly — AI News Intelligence</title>
+    <meta name="description" content="Briefly: AI-powered multilingual news clustering, Telegram OSINT verification, and RAG chatbot.">
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%23d42020'/><text x='50' y='68' text-anchor='middle' fill='white' font-size='55' font-weight='900' font-family='sans-serif'>B</text></svg>">
+</head>
+<body>
+
+    <!-- ====== NAVBAR ====== -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-brand">
+            <div class="nav-logo">B</div>
+            <span class="nav-brand-text">Briefly</span>
+        </div>
+        <ul class="nav-links">
+            <li><button class="nav-link active" data-page="feed">Feed</button></li>
+            <li><button class="nav-link" data-page="chat">AI Chat</button></li>
+            <li><button class="nav-link" data-page="settings">Sources</button></li>
+        </ul>
+        <div class="nav-status">
+            <div class="status-dot"></div>
+            <span id="status-text">Connecting…</span>
+        </div>
+    </nav>
+
+    <!-- ====== MAIN ====== -->
+    <div class="main">
+
+        <!-- === FEED PAGE === -->
+        <div id="page-feed" class="page active">
+            <div class="stats-bar" id="stats-bar">
+                <div class="stat"><div class="stat-label">Articles</div><div class="stat-value red" id="s-total">—</div></div>
+                <div class="stat"><div class="stat-label">Event Clusters</div><div class="stat-value white" id="s-clusters">—</div></div>
+                <div class="stat"><div class="stat-label">Sources</div><div class="stat-value white" id="s-sources">—</div></div>
+                <div class="stat"><div class="stat-label">Telegram</div><div class="stat-value white" id="s-tg">—</div></div>
+            </div>
+            <div class="filter-bar" id="filter-bar"></div>
+            <div id="feed-container" class="feed-grid">
+                <div class="loading"><div class="spinner"></div> Loading…</div>
+            </div>
+        </div>
+
+        <!-- === CHAT PAGE === -->
+        <div id="page-chat" class="page">
+            <div class="chat-container">
+                <div class="chat-messages" id="chat-messages">
+                    <div class="chat-msg bot">
+                        <div class="chat-avatar">B</div>
+                        <div class="chat-bubble">Welcome to Briefly AI. Ask me anything about today's news — I search the verified corpus and cite sources. 🗞️</div>
+                    </div>
+                </div>
+                <div class="chat-input-area">
+                    <input class="chat-input" id="chat-input" type="text" placeholder="Ask about today's news…" autocomplete="off">
+                    <button class="chat-send" id="chat-send">Send</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- === SETTINGS PAGE === -->
+        <div id="page-settings" class="page">
+            <div class="settings-header">
+                <h2>Manage Sources</h2>
+            </div>
+            
+            <!-- Floating Add Button -->
+            <button class="fab-add-btn" onclick="openDrawer()">+</button>
+
+            <!-- Slide-out Drawer -->
+            <div id="drawer-overlay" class="drawer-overlay" onclick="closeDrawer()"></div>
+            <div id="add-drawer" class="drawer">
+                <div class="drawer-header">
+                    <h3>Add New Source</h3>
+                    <span class="close-drawer" onclick="closeDrawer()">&times;</span>
+                </div>
+                <div class="drawer-nav">
+                    <button class="drawer-nav-item active" onclick="switchDrawerTab('rss')">📰 RSS / Newsletter</button>
+                    <button class="drawer-nav-item" onclick="switchDrawerTab('telegram')">📡 Telegram Channel</button>
+                    <button class="drawer-nav-item" onclick="switchDrawerTab('telegram_list')">📑 Telegram List</button>
+                </div>
+                <div class="drawer-body">
+                    <input type="hidden" id="res-type" value="rss">
+                    <div class="form-group">
+                        <label>Category</label>
+                        <select id="res-category-select" onchange="toggleCustomCategory()">
+                            <option value="World News">World News</option>
+                            <option value="Middle East & Egypt">Middle East & Egypt</option>
+                            <option value="Technology">Technology</option>
+                            <option value="other">Other...</option>
+                        </select>
+                        <input type="text" id="res-category" placeholder="Type new category..." style="display: none; margin-top: 10px;">
+                    </div>
+                    <div class="form-group">
+                        <label id="res-name-label">Feed Name</label>
+                        <input type="text" id="res-name" placeholder="Name or @channel">
+                    </div>
+                    <div class="form-group" id="res-url-group">
+                        <label>URL</label>
+                        <input type="url" id="res-url" placeholder="https://...">
+                    </div>
+                    <button class="submit-res-btn" onclick="submitNewResource()">Add Source</button>
+                </div>
+            </div>
+
+            <div id="settings-container" class="settings-grid">
+                <div class="loading"><div class="spinner"></div> Loading…</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,83 @@
+{
+    "AVAILABLE_RSS_FEEDS": {
+        "CNN World": "http://rss.cnn.com/rss/edition_world.rss",
+        "BBC World": "https://feeds.bbci.co.uk/news/world/rss.xml",
+        "Al Jazeera": "https://www.aljazeera.com/xml/rss/all.xml",
+        "Reuters": "https://feeds.reuters.com/reuters/worldNews",
+        "The Guardian": "https://www.theguardian.com/world/rss",
+        "Fox News": "https://moxie.foxnews.com/google-publisher/world.xml",
+        "Sky News Arabia": "https://www.skynewsarabia.com/web/rss",
+        "Mada Masr": "https://www.madamasr.com/en/feed/",
+        "Masrawy": "https://www.masrawy.com/rss/rssfeeds",
+        "Daily News Egypt": "https://dailynewsegypt.com/feed/",
+        "Egypt Independent": "https://www.egyptindependent.com/feed/",
+        "El Watan News": "https://www.elwatannews.com/rss",
+        "Shorouk News": "https://www.shorouknews.com/rss",
+        "Al Masry Al Youm": "https://www.almasryalyoum.com/rss/rssfeeds",
+        "Egyptian Streets": "https://egyptianstreets.com/feed/",
+        "Youm7": "https://www.youm7.com/rss/SectionRss",
+        "Al Bawaba": "https://www.albawaba.com/rss.xml",
+        "Ahram Online": "https://english.ahram.org.eg/UI/Front/Rss.aspx",
+        "Coding Horror": "https://blog.codinghorror.com/rss/",
+        "TechCrunch": "https://techcrunch.com/feed/"
+    },
+    "AVAILABLE_RSS_GROUPED": {
+        "World News": [
+            "CNN World",
+            "BBC World",
+            "Al Jazeera",
+            "Reuters",
+            "The Guardian"
+        ],
+        "Middle East & Egypt": [
+            "Mada Masr",
+            "Masrawy",
+            "Daily News Egypt",
+            "Egypt Independent",
+            "El Watan News",
+            "Shorouk News",
+            "Al Masry Al Youm",
+            "Egyptian Streets",
+            "Youm7",
+            "Al Bawaba",
+            "Ahram Online"
+        ],
+        "Other": [
+            "Fox News",
+            "Sky News Arabia",
+            "Coding Horror"
+        ],
+        "Technology": [
+            "TechCrunch"
+        ]
+    },
+    "CURATED_TELEGRAM": {
+        "Arabic News": [
+            "aljazeera",
+            "SkyNewsArabia_B",
+            "rtarabictelegram"
+        ],
+        "Palestine & Middle East": [
+            "hanzpal20",
+            "Middle_East_Spectator",
+            "thecradlemedia",
+            "Faytuks",
+            "ME_Observer_"
+        ],
+        "Breaking & OSINT": [
+            "AlJazeeraEnglish",
+            "disclosetv",
+            "BNO_News",
+            "atlasnewstelegram",
+            "IntelPointAlert",
+            "war_monitor"
+        ],
+        "Geopolitics & Defense": [
+            "DDGeopolitics",
+            "DefenseArab",
+            "geopolitics_live",
+            "AUKUS_news",
+            "SouthFrontEng"
+        ]
+    }
+}
