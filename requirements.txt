@@ -1,0 +1,44 @@
+# Core ML / NLP
+torch
+transformers
+sentencepiece
+sentence-transformers
+scikit-learn
+nltk
+langdetect
+openai
+wikipedia
+
+# Summarization evaluation
+rouge-score
+evaluate
+datasets
+
+# Scraping
+requests
+beautifulsoup4
+goose3
+selenium
+
+# Dimensionality reduction & clustering
+umap-learn
+hdbscan
+
+# Data
+pandas
+plotly
+
+# Environment & config
+python-dotenv
+
+# Vector database (Milestone 2)
+qdrant-client
+
+# Telegram ingestion (Milestone 3 — future)
+# telethon
+
+# Demo UI (Milestone 6 — future)
+streamlit
+Flask
+feedparser
+telethon
