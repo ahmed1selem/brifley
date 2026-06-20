@@ -22,7 +22,7 @@ def get_cat(paragraph):
         
     # Lazy load the centroid matrix
     if _centroid_matrix is None:
-        centroid_file = "classifier_centroids.pkl"
+        centroid_file = "./artifacts/classifier/classifier_centroids.pkl"
         if not os.path.exists(centroid_file):
             return "General News" # Fallback if file isn't built yet
             
@@ -44,10 +44,55 @@ def get_cat(paragraph):
     if best_score < 0.15:
         return "General News"
         
-    raw_category = _categories[best_idx]
-    
-    # Clean up formatting for the UI (e.g., "WORLD NEWS" -> "World News")
-    return raw_category.replace("_", " ").title()
+    raw_category = _categories[best_idx].replace("_", " ").title()
+
+    # Merge HuffPost-specific label variants into clean, consistent names.
+    # "Worldpost" and "The Worldpost" are the same section — unifying them
+    # is critical for category-aware clustering: articles about the same
+    # story must land in the same bucket or they can never cluster together.
+    _NORMALIZE = {
+        "Worldpost":       "World News",
+        "The Worldpost":   "World News",
+        "World News":      "World News",
+        "U.S. News":       "U.S. News",
+        "Politics":        "Politics",
+        "Tech":            "Technology",
+        "Technology":      "Technology",
+        "Science":         "Science",
+        "Business":        "Business",
+        "Money":           "Finance",
+        "Finance":         "Finance",
+        "Sports":          "Sports",
+        "Crime":           "Crime",
+        "Media":           "Media",
+        "Entertainment":   "Entertainment",
+        "Comedy":          "Entertainment",
+        "Arts":            "Arts",
+        "Culture":         "Arts",
+        "Culture & Arts":  "Arts",
+        "Environment":     "Environment",
+        "Green":           "Environment",
+        "Religion":        "Religion",
+        "Education":       "Education",
+        "College":         "Education",
+        "Wellness":        "Health",
+        "Travel":          "Travel",
+        "Style & Beauty":  "Lifestyle",
+        "Home & Living":   "Lifestyle",
+        "Parenting":       "Lifestyle",
+        "Parents":         "Lifestyle",
+        "Taste":           "Lifestyle",
+        "Food & Drink":    "Lifestyle",
+        "Fifty":           "General News",
+        "Impact":          "General News",
+        "Good News":       "General News",
+        "Weird News":      "General News",
+        "Black Voices":    "General News",
+        "Latino Voices":   "General News",
+        "Women":           "General News",
+    }
+
+    return _NORMALIZE.get(raw_category, raw_category)
 
 if __name__ == '__main__':
     # Simple test
