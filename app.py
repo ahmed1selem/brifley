@@ -20,6 +20,12 @@ from pydantic import BaseModel
 from qdrant_client import QdrantClient
 import uvicorn
 import json
+from dotenv import load_dotenv
+
+load_dotenv()
+
+TG_API_ID = os.getenv("TG_API_ID")
+TG_API_HASH = os.getenv("TG_API_HASH")
 
 # ==========================================
 # RSS FEED URL MAPPING (Name → URL)
@@ -216,11 +222,25 @@ def scheduler_loop():
 # ==========================================
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Start the background ingestion scheduler on app startup."""
+    """Start the batch ingestion scheduler and real-time Telegram listener."""
+    # Batch scheduler runs every N hours in a background thread
     thread = threading.Thread(target=scheduler_loop, daemon=True)
     thread.start()
     print(f"[Scheduler] Background ingestion started (every {INGEST_INTERVAL_HOURS}h)")
+
+    # Real-time Telegram listener runs as an async task in this event loop
+    from telegram_listener import run_listener
+    tg_task = asyncio.create_task(
+        run_listener(TG_API_ID, TG_API_HASH, load_current_channels)
+    )
+
     yield
+
+    tg_task.cancel()
+    try:
+        await tg_task
+    except asyncio.CancelledError:
+        pass
     print("[Scheduler] Shutting down.")
 
 app = FastAPI(title="Briefley", version="2.0", lifespan=lifespan)
@@ -365,4 +385,4 @@ async def trigger_ingest():
 # ==========================================
 if __name__ == "__main__":
     print("Starting Briefley v2.0 …")
-    uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=False)
+    uvicorn.run("app:app", host="0.0.0.0", port=8050, reload=False)
