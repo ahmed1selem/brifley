@@ -8,7 +8,7 @@ from datetime import datetime
 
 # Import from our existing project modules
 from vdb_helper import VectorDBHelper
-from clustering import get_embedder
+from clustering import embed
 
 # Load environment variables
 load_dotenv()
@@ -58,7 +58,6 @@ async def main():
     # Initialize VDB and Embedder
     print("Loading Vector DB and Embedder model...")
     vdb = VectorDBHelper()
-    embedder = get_embedder()
     print("Models loaded successfully.")
     
     # Load dynamic channels
@@ -87,8 +86,8 @@ async def main():
         channel_name = channel_entity.username or str(channel_entity.id)
         msg_id = f"{channel_name}_{event.message.id}"
         
-        # 1. Embed the Telegram message
-        embedding = embedder.encode(text).tolist()
+        # 1. Embed the Telegram message (stopwords removed for consistency)
+        embedding = embed(text)
         
         # 2. Ground-Truth Filter: Compare against verified mainstream news
         similar_articles = vdb.search_similar(embedding, top_k=1)
@@ -101,8 +100,13 @@ async def main():
             top_match = similar_articles[0]
             similarity_score = top_match["score"]
             match_cluster_id = top_match["payload"].get("cluster_id")
-            
-            if similarity_score >= CORROBORATED_THRESHOLD:
+
+            # A match only counts as CORROBORATED when the matched article belongs to
+            # a real multi-source cluster (cluster_id != "-1").  Matching a standalone
+            # noise article proves nothing — downgrade those to NOVEL at most.
+            in_real_cluster = match_cluster_id and str(match_cluster_id) != "-1"
+
+            if similarity_score >= CORROBORATED_THRESHOLD and in_real_cluster:
                 label = "CORROBORATED"
             elif similarity_score >= NOVEL_THRESHOLD:
                 label = "NOVEL"

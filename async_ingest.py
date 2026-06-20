@@ -12,10 +12,11 @@ from sklearn.metrics.pairwise import cosine_similarity
 import scraping
 import classifier
 import summarizer
-from clustering import clusters, get_embedder, remove_stopwords
+from clustering import clusters, get_embedder, remove_stopwords, embed
 from vdb_helper import VectorDBHelper
 from app import AVAILABLE_RSS_FEEDS, load_current_rss, load_current_channels
 from telethon import TelegramClient
+from telethon.tl.types import MessageMediaWebPage
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -35,8 +36,6 @@ def deduplicate_articles(articles, threshold=0.90):
 
     Returns a new list with duplicates removed.
     """
-    embedder = get_embedder()
-
     # Group articles by cluster_id (skip noise)
     cluster_map = {}  # cluster_id -> list of articles
     for article in articles:
@@ -53,9 +52,9 @@ def deduplicate_articles(articles, threshold=0.90):
             # Nothing to compare inside a single-article cluster
             continue
 
-        # Encode all summaries in one batch for efficiency
-        summaries = [a.get("summary", "") or "" for a in group]
-        embeddings = embedder.encode(summaries)
+        # Encode all summaries in one batch for efficiency, stopwords removed
+        summaries = [remove_stopwords(a.get("summary", "") or "") for a in group]
+        embeddings = get_embedder().encode(summaries)
         sim_matrix = cosine_similarity(embeddings)
 
         # Walk the upper triangle of the similarity matrix
@@ -233,23 +232,48 @@ async def telegram_worker(classify_queue):
                     if msg.message and msg.message.strip():
                         article_id = generate_id(f"tg_{channel}_{msg.id}")
                         text = msg.message.strip()
-                        
+                        dynamic_title = text[:80].replace('\n', ' ') + ('...' if len(text) > 80 else '')
+
+                        # Download attached photo / video / web-preview image
+                        image_url = None
+                        video_url = None
+                        os.makedirs("static/media", exist_ok=True)
+                        try:
+                            if msg.photo:
+                                path = await msg.download_media(file="static/media")
+                                if path:
+                                    image_url = f"/static/media/{os.path.basename(path)}"
+                            elif isinstance(getattr(msg, 'media', None), MessageMediaWebPage):
+                                wp = msg.media.webpage
+                                if hasattr(wp, 'photo') and wp.photo:
+                                    path = await msg.download_media(file="static/media")
+                                    if path:
+                                        image_url = f"/static/media/{os.path.basename(path)}"
+                            if msg.video or getattr(msg, 'video_note', None):
+                                path = await msg.download_media(file="static/media")
+                                if path:
+                                    video_url = f"/static/media/{os.path.basename(path)}"
+                        except Exception as media_err:
+                            print(f"[Telegram Batch] Media download failed @{channel}/{msg.id}: {media_err}")
+
                         async with state_lock:
                             if article_id not in article_state:
                                 article_state[article_id] = {
                                     "id": article_id,
                                     "url": f"https://t.me/{channel}/{msg.id}",
                                     "source_name": channel,
-                                    "title": None,
-                                    "image_url": None,
+                                    "title": dynamic_title,
+                                    "image_url": image_url,
+                                    "video_url": video_url,
                                     "text": text,
                                     "category": None,
-                                    "summary": text, # Bypass summarization
-                                    "Summarized": text, # Bypass summarization
+                                    # Telegram messages are already concise — bypass summarize_worker
+                                    "summary": text,
+                                    "Summarized": text,
                                     "timestamp": msg.date.isoformat() if msg.date else datetime.datetime.now().isoformat(),
-                                    "status": "pending_classification" # Means it skips scraping/summarizing
+                                    "status": "completed"
                                 }
-                        # Push straight to classify queue
+                        # Only classify — summarization is bypassed for Telegram messages
                         await classify_queue.put(article_id)
             except Exception as e:
                 print(f"[Telegram Error] Could not fetch @{channel}: {e}")
@@ -338,7 +362,7 @@ async def async_main():
     async with state_lock:
         for article_id, data in article_state.items():
             if data["status"] in ["completed", "pending_classification"] and data["summary"]:
-                data["video_url"] = None
+                data.setdefault("video_url", None)  # don't overwrite if telegram_worker already set it
                 processed_articles.append(data)
                 
     if not processed_articles:
@@ -364,12 +388,10 @@ async def async_main():
     # Sync operation: Vector DB Insertion
     print("[Pipeline] Connecting to Vector DB...")
     vdb = VectorDBHelper()
-    embedder = get_embedder()
-    
+
     inserted_count = 0
     for article in processed_articles:
-        filtered_summary = remove_stopwords(article["summary"])
-        embedding = embedder.encode(filtered_summary).tolist()
+        embedding = embed(article["summary"])
         
         payload = {
             "url": article["url"],
