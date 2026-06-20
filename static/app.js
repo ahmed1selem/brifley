@@ -8,6 +8,7 @@ const API = '';
 // ---- STATE ----
 let allItems = [];       // Unified feed (clusters + standalone + telegram)
 let activeFilter = 'all';
+let activeStatFilter = 'all';
 
 // ---- NAV ----
 document.querySelectorAll('.nav-link').forEach(btn => {
@@ -24,8 +25,52 @@ function esc(t) { if (!t) return ''; const d = document.createElement('div'); d.
 function initial(name) { return name ? name.replace('@','').charAt(0).toUpperCase() : '?'; }
 function trunc(text, n=220) { return text && text.length > n ? text.substring(0,n) + '…' : (text||''); }
 
-// Fallback image — Briefly red B
+// Generic fallback — Briefly red B (last resort)
 const FALLBACK_IMG = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 200'%3E%3Crect width='400' height='200' fill='%231a1a1a'/%3E%3Ccircle cx='200' cy='100' r='50' fill='%23d42020'/%3E%3Ctext x='200' y='118' text-anchor='middle' fill='white' font-size='50' font-weight='900' font-family='sans-serif'%3EB%3C/text%3E%3C/svg%3E";
+
+// Telegram logo as inline SVG (used for all Telegram channel fallbacks)
+const TELEGRAM_IMG = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 240'%3E%3Ccircle cx='120' cy='120' r='120' fill='%2329b6f6'/%3E%3Cpath fill='%23fff' d='M175 66L152 176c-2 7-6 9-12 5l-33-24-16 15c-2 2-4 3-7 3l2-34 57-51c3-2 0-3-3-1L76 130l-32-10c-7-2-7-7 2-10l121-47c6-2 11 2 8 10z'/%3E%3C/svg%3E";
+
+// Source-specific fallback logos keyed by source_name (RSS feed names and Telegram usernames).
+// Used when an article has no image_url, or when the image URL fails to load.
+// Priority: source logo → FALLBACK_IMG generic B.
+const SOURCE_LOGOS = {
+    // ── International RSS ──────────────────────────────
+    "BBC World":        "https://ichef.bbci.co.uk/news/1024/cpsprodpb/9A90/production/_97086593_defaultimage.png.webp",
+    "Al Jazeera":       "https://www.aljazeera.com/favicon-32x32.png",
+    "Daily News Egypt": "https://d1b3667xvzs6rz.cloudfront.net/2023/10/Dailynews-logo.png",
+    "Coding Horror":    "https://blog.codinghorror.com/assets/images/codinghorror-app-icon.png?v=c8e4b9197a",
+    // ── Egypt RSS ──────────────────────────────────────
+    "Youm7":            "https://img.youm7.com/images/graphics/logoyoum7.png",
+    "Al Bawaba":        "https://www.albawabhnews.com/themes/bawaba/assets/images/logo.png",
+    "Masrawy":          "https://th.bing.com/th/id/OIP.vKF9uBSgjCZYXM-n28mBEAHaEK?rs=1&pid=ImgDetMain",
+    "Egyptian Streets": "https://egyptianstreets.com/wp-content/uploads/2022/07/egysinai.jpg",
+    // ── Telegram channels (usernames, no @) ───────────
+    "aljazeera":        TELEGRAM_IMG,
+    "SkyNewsArabia_B":  TELEGRAM_IMG,
+    "rtarabictelegram": TELEGRAM_IMG,
+    "AlJazeeraEnglish": TELEGRAM_IMG,
+    "hanzpal20":        TELEGRAM_IMG,
+    "Middle_East_Spectator": TELEGRAM_IMG,
+    "thecradlemedia":   TELEGRAM_IMG,
+    "Faytuks":          TELEGRAM_IMG,
+    "ME_Observer_":     TELEGRAM_IMG,
+    "disclosetv":       TELEGRAM_IMG,
+    "BNO_News":         TELEGRAM_IMG,
+    "atlasnewstelegram":TELEGRAM_IMG,
+    "IntelPointAlert":  TELEGRAM_IMG,
+    "war_monitor":      TELEGRAM_IMG,
+    "DDGeopolitics":    TELEGRAM_IMG,
+    "DefenseArab":      TELEGRAM_IMG,
+    "geopolitics_live": TELEGRAM_IMG,
+    "AUKUS_news":       TELEGRAM_IMG,
+    "SouthFrontEng":    TELEGRAM_IMG,
+};
+
+/** Return the source-specific logo, or the generic fallback if none is registered. */
+function getSourceFallback(sourceName) {
+    return SOURCE_LOGOS[sourceName] || FALLBACK_IMG;
+}
 
 // ---- LOAD FEED ----
 async function loadFeed() {
@@ -118,6 +163,29 @@ function updateStats(feedItems, tgItems) {
     document.getElementById('s-tg').textContent = tgItems.length;
 }
 
+function filterFeedByStat(statName) {
+    if (statName === 'sources') {
+        // "Sources" click opens the drawer to manage them
+        openDrawer();
+        return;
+    }
+    
+    if (activeStatFilter === statName) {
+        activeStatFilter = 'all'; // Toggle off if clicked again
+    } else {
+        activeStatFilter = statName;
+    }
+    
+    // Update UI active states
+    document.querySelectorAll('.stat').forEach(el => el.classList.remove('active'));
+    if (activeStatFilter !== 'all') {
+        const el = document.getElementById('stat-' + activeStatFilter);
+        if (el) el.classList.add('active');
+    }
+    
+    renderFeed();
+}
+
 // ---- FILTER BAR ----
 function buildFilterBar() {
     const cats = new Set(['all']);
@@ -138,8 +206,19 @@ function buildFilterBar() {
 function renderFeed() {
     const container = document.getElementById('feed-container');
     let items = allItems;
+    
+    // 1. Category Filter
     if (activeFilter !== 'all') {
         items = items.filter(i => i.category === activeFilter);
+    }
+    
+    // 2. Stat Filter
+    if (activeStatFilter === 'articles') {
+        items = items.filter(i => !i.isTelegram && i._type !== 'cluster');
+    } else if (activeStatFilter === 'clusters') {
+        items = items.filter(i => i._type === 'cluster');
+    } else if (activeStatFilter === 'telegram') {
+        items = items.filter(i => i.isTelegram);
     }
 
     if (!items.length) {
@@ -148,7 +227,8 @@ function renderFeed() {
     }
 
     container.innerHTML = items.map((item, idx) => {
-        const imgSrc = item.image && item.image.match(/^http/) ? esc(item.image) : FALLBACK_IMG;
+        // Use the source-specific logo when no image_url is available
+        const imgSrc = (item.image && item.image.match(/^http/)) ? esc(item.image) : getSourceFallback(item.source);
         const sourceBadge = item.isTelegram
             ? '<span class="pill pill-telegram">📡 Telegram</span>'
             : '';
@@ -169,7 +249,7 @@ function renderFeed() {
             }).join('');
 
             return `<div class="card">
-                <img class="card-img" src="${imgSrc}" alt="" onerror="this.src='${FALLBACK_IMG}'">
+                <img class="card-img" src="${imgSrc}" alt="" data-source="${esc(item.source)}" onerror="this.onerror=null;this.src=getSourceFallback(this.dataset.source)">
                 <div class="card-body">
                     <div class="card-badges">
                         <span class="pill pill-category">${esc(item.category)}</span>
@@ -188,7 +268,7 @@ function renderFeed() {
             </div>`;
         } else {
             return `<div class="card" ${item.url ? `onclick="window.open('${esc(item.url)}','_blank')"` : ''}>
-                <img class="card-img" src="${imgSrc}" alt="" onerror="this.src='${FALLBACK_IMG}'">
+                <img class="card-img" src="${imgSrc}" alt="" data-source="${esc(item.source)}" onerror="this.onerror=null;this.src=getSourceFallback(this.dataset.source)">
                 <div class="card-body">
                     <div class="card-badges">
                         <span class="pill pill-category">${esc(item.category)}</span>

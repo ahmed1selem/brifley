@@ -33,10 +33,10 @@
         <!-- === FEED PAGE === -->
         <div id="page-feed" class="page active">
             <div class="stats-bar" id="stats-bar">
-                <div class="stat"><div class="stat-label">Articles</div><div class="stat-value red" id="s-total">—</div></div>
-                <div class="stat"><div class="stat-label">Event Clusters</div><div class="stat-value white" id="s-clusters">—</div></div>
-                <div class="stat"><div class="stat-label">Sources</div><div class="stat-value white" id="s-sources">—</div></div>
-                <div class="stat"><div class="stat-label">Telegram</div><div class="stat-value white" id="s-tg">—</div></div>
+                <div class="stat" id="stat-articles" onclick="filterFeedByStat('articles')"><div class="stat-label">Articles</div><div class="stat-value red" id="s-total">—</div></div>
+                <div class="stat" id="stat-clusters" onclick="filterFeedByStat('clusters')"><div class="stat-label">Event Clusters</div><div class="stat-value white" id="s-clusters">—</div></div>
+                <div class="stat" id="stat-sources" onclick="filterFeedByStat('sources')"><div class="stat-label">Sources</div><div class="stat-value white" id="s-sources">—</div></div>
+                <div class="stat" id="stat-tg" onclick="filterFeedByStat('telegram')"><div class="stat-label">Telegram</div><div class="stat-value white" id="s-tg">—</div></div>
             </div>
             <div class="filter-bar" id="filter-bar"></div>
             <div id="feed-container" class="feed-grid">
