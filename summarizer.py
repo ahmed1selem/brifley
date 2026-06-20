@@ -30,12 +30,12 @@ def summarize(article):
 @functools.lru_cache(maxsize=2)
 def load_resources(language):
     if language=="ar":
-        saved_model_dir = "./arabic"
-        tokenizer = AutoTokenizer.from_pretrained(saved_model_dir, local_files_only=True)
+        saved_model_dir = "./artifacts/arabic"
+        tokenizer = AutoTokenizer.from_pretrained(saved_model_dir, local_files_only=True, use_fast=False)
 
     elif language=="en":
-        saved_model_dir = "./english"
-        tokenizer = PegasusTokenizer.from_pretrained(saved_model_dir, local_files_only=True)
+        saved_model_dir = "./artifacts/english"
+        tokenizer = PegasusTokenizer.from_pretrained(saved_model_dir, local_files_only=True, use_fast=False)
     else:
         return "not suported lang"
     model = AutoModelForSeq2SeqLM.from_pretrained(saved_model_dir, local_files_only=True)
