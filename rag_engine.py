@@ -3,7 +3,7 @@ import json
 import wikipedia
 from openai import OpenAI
 from vdb_helper import VectorDBHelper
-from clustering import get_embedder
+from clustering import embed
 
 class RAGEngine:
     def __init__(self):
@@ -16,7 +16,6 @@ class RAGEngine:
         self.model = "llama3.2:latest"
         
         self.vdb = VectorDBHelper()
-        self.embedder = get_embedder()
 
     # ==========================================
     # SKILL 1: Cluster Fetcher
@@ -43,7 +42,7 @@ class RAGEngine:
     def global_vector_search(self, query: str, preferred_sources: list = None) -> str:
         """Search the entire database for general breaking news queries."""
         print(f"[Skill Execution] Searching global vector DB for '{query}'")
-        embedding = self.embedder.encode([query], show_progress_bar=False)[0].tolist()
+        embedding = embed(query)
         
         results = self.vdb.search_similar(embedding, top_k=5, preferred_sources=preferred_sources)
         
@@ -170,7 +169,7 @@ class RAGEngine:
                 tool_choice="auto"
             )
         except Exception as e:
-            return f"Error connecting to Together.ai: {e}"
+            return f"Error connecting to Ollama: {e}"
 
         response_message = response.choices[0].message
         tool_calls = response_message.tool_calls
