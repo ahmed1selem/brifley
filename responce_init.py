@@ -1,3 +1,4 @@
+import os
 import requests
 from random import randint
 from urllib.parse import urlencode
@@ -5,7 +6,7 @@ from urllib.parse import urlencode
 
 class ScrapeOpsFakeBrowserHeaderAgentMiddleware:
     def __init__(self, scrapeops_num_results=None):
-        self.scrapeops_api_key = '483dd2ae-8c6f-4f6a-82a6-82317e7d0ac0'
+        self.scrapeops_api_key = os.getenv("SCRAPEOPS_API_KEY", "483dd2ae-8c6f-4f6a-82a6-82317e7d0ac0")
         self.scrapeops_endpoint = 'http://headers.scrapeops.io/v1/browser-headers'
         self.scrapeops_num_results = scrapeops_num_results
         self.headers_list = []

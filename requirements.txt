@@ -17,12 +17,13 @@ datasets
 # Scraping
 requests
 beautifulsoup4
-goose3
-selenium
+trafilatura        # replaces goose3 — better text/title/OG-image extraction
+playwright         # replaces selenium — async-native, lighter, better stealth
+                   # after install run: playwright install chromium
 
-# Dimensionality reduction & clustering
-umap-learn
-hdbscan
+# Dimensionality reduction & clustering (kept for reference, not active)
+# umap-learn
+# hdbscan
 
 # Data
 pandas
@@ -34,11 +35,7 @@ python-dotenv
 # Vector database (Milestone 2)
 qdrant-client
 
-# Telegram ingestion (Milestone 3 — future)
-# telethon
-
-# Demo UI (Milestone 6 — future)
-streamlit
-Flask
+fastapi
+uvicorn
 feedparser
 telethon
