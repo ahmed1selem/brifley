@@ -1,73 +1,33 @@
-# 🧠 Briefley: AI-Powered News Summarization & Comparison Engine (Python Module)
+# 🧠 Briefley — Multilingual News Intelligence Engine
 
-**Briefley** is an AI-driven backend system designed to enhance the way users consume and analyze news. This Python module handles news extraction, summarization, categorization, and clustering — making it easier to compare coverage across sources and detect biases.
-
-While the full system integrates with a .NET backend and database, this repo focuses on the core **Python-powered intelligence engine**.
+**Briefley** is the Python AI engine behind an AI-powered news platform. It scrapes news from 20+ Arabic & English outlets, summarizes and classifies articles, clusters the same story across sources for bias/coverage comparison, and answers questions through an **agentic RAG** assistant. The wider product also has a .NET backend and a React frontend (built by other team members); **this repository is the Python intelligence engine.**
 
 ---
 
-## 🌍 What It Does
+## ✨ What it does
 
-- **Fetches News from 20+ Global Agencies**  
-  Scrapes articles (both English & Arabic) from top news outlets using `requests`, `BeautifulSoup`, and `Selenium`. The system runs every 5 minutes, ensuring fresh content is always available.
-
-- **Abstractive Summarization**  
-  Automatically condenses long articles using:
-  - 🟣 **PEGASUS** for English articles
-  - 🟢 **Arabic BART** for Arabic content
-
-- **Categorizes Articles into Topics**  
-  Articles are classified into 5 main categories:
-  - 📰 Politics
-  - ⚽ Sports
-  - 💰 Economy
-  - 🎭 Entertainment
-  - 🏥 tech
-
-  Categorization is done using two ML models:  
-  - **Decision Trees**  
-  - **Naive Bayes**
-
-- **Groups Similar Stories Together**  
-  To detect multiple perspectives on the same event, Briefley clusters news stories using:
-  - **Sentence Transformers** for embeddings  
-  - **DBSCAN** for density-based clustering
-
-- **Supports Bias Awareness**  
-  For each news story, the system identifies alternate versions from different agencies — letting users compare headlines, tone, and narrative.
+- **Scraping (20+ AR/EN sources)** — `requests`, `BeautifulSoup`, `Selenium`, and `Goose3`, plus a Telegram ingestor (Telethon), on a periodic refresh loop.
+- **Abstractive summarization** — **PEGASUS** for English (ROUGE-1 ≈ 30.3 on held-out data) and **AraBART** for Arabic.
+- **News classification** — a **nearest-centroid classifier** over multilingual Sentence-Transformer embeddings (`distiluse-base-multilingual-cased-v1`): each article is assigned to the topic whose category centroid is closest by cosine similarity.
+- **Cross-source clustering** — **Agglomerative clustering** (cosine distance, average linkage) *within each category*, grouping different outlets' coverage of the same event so readers can compare headlines, tone, and framing.
+- **Agentic RAG assistant** — a local **Llama-3.2** model (via Ollama) with **native tool-calling** over three skills: Qdrant vector search, news-cluster lookup, and Wikipedia. Answers are grounded and source-cited.
+- **Serving** — a **FastAPI** service exposing the engine, with a lightweight static frontend and Docker Compose.
 
 ---
 
-## 🛠 Tech Stack & Components
+## 🛠 Tech Stack
 
-| Component         | Details                                |
-|------------------|----------------------------------------|
-| Language          | Python                                 |
-| Summarizers       | PEGASUS, Arabic BART                   |
-| Categorization    | Decision Trees, Naive Bayes            |
-| Clustering        | DBSCAN + Sentence Transformer Embeddings |
-| Scraping Tools    | BeautifulSoup, Requests, Selenium      |
-| Scheduling        | Runs every 5 minutes (custom loop)     |
-| Backend Interface | REST API for .NET backend integration  |
-
-> **Note:** This module **interacts with the backend database via API** — the DB and user personalization system are managed by the backend (.NET) team.
+| Layer | Tools |
+| --- | --- |
+| Summarization | PEGASUS (EN), AraBART (AR) |
+| Classification | Nearest-centroid + Sentence-Transformers (DistilUSE multilingual) |
+| Clustering | Agglomerative (cosine, average linkage) |
+| Agentic RAG | Ollama Llama-3.2 (tool-calling), Qdrant, Wikipedia |
+| Scraping | requests, BeautifulSoup, Selenium, Goose3, Telethon |
+| Serving | FastAPI, Uvicorn, Docker Compose |
 
 ---
 
-## 📦 What's Not Included
+## 📦 Scope
 
-This repo **only contains the Python side** of the project. It does **not** include:
-- The database schema or implementation
-- User personalization features (handled in the backend)
-- The frontend interface
-
----
-
-## 🚀 Coming Soon / Ideas
-
-- Interactive architecture diagram
-- CLI / API usage guide
-- Model benchmarking results
-- Installation & dev setup instructions
-
----
+This repository contains the **Python intelligence engine** only. The database/personalization layer (.NET backend) and the web UI (React frontend) are maintained by other team members and are not included here.
