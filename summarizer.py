@@ -2,6 +2,7 @@ from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 from langdetect import detect
 import textwrap
 import torch
+import functools
 from transformers import PegasusTokenizer
 
 
@@ -13,12 +14,12 @@ def summarize(article):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.to(device)
 
-    inputs = tokenizer.encode("summarize: " + text, return_tensors="pt", max_length=1024, truncation=True)
+    inputs = tokenizer.encode(text, return_tensors="pt", max_length=1024, truncation=True)
     inputs = inputs.to(device)
 
     summary_ids = model.generate(inputs, max_length=150, min_length=50, length_penalty=2.0, num_beams=4, early_stopping=True)
 
-    summary_ids = summary_ids.to("cpu")
+    summary_ids = summary_ids.to(device)
 
     summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
     summary=format(summary)
@@ -26,17 +27,18 @@ def summarize(article):
 
 
 
+@functools.lru_cache(maxsize=2)
 def load_resources(language):
     if language=="ar":
-        saved_model_dir = "./arabic"
-        tokenizer = AutoTokenizer.from_pretrained(saved_model_dir)
+        saved_model_dir = "./artifacts/arabic"
+        tokenizer = AutoTokenizer.from_pretrained(saved_model_dir, local_files_only=True, use_fast=False)
 
     elif language=="en":
-        saved_model_dir = "./english"
-        tokenizer = PegasusTokenizer.from_pretrained(saved_model_dir)
+        saved_model_dir = "./artifacts/english"
+        tokenizer = PegasusTokenizer.from_pretrained(saved_model_dir, local_files_only=True, use_fast=False)
     else:
         return "not suported lang"
-    model = AutoModelForSeq2SeqLM.from_pretrained(saved_model_dir)
+    model = AutoModelForSeq2SeqLM.from_pretrained(saved_model_dir, local_files_only=True)
     return model,tokenizer
 
 

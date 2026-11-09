@@ -1,0 +1,41 @@
+# Core ML / NLP
+torch
+transformers
+sentencepiece
+sentence-transformers
+scikit-learn
+nltk
+langdetect
+openai
+wikipedia
+
+# Summarization evaluation
+rouge-score
+evaluate
+datasets
+
+# Scraping
+requests
+beautifulsoup4
+trafilatura        # replaces goose3 — better text/title/OG-image extraction
+playwright         # replaces selenium — async-native, lighter, better stealth
+                   # after install run: playwright install chromium
+
+# Dimensionality reduction & clustering (kept for reference, not active)
+# umap-learn
+# hdbscan
+
+# Data
+pandas
+plotly
+
+# Environment & config
+python-dotenv
+
+# Vector database (Milestone 2)
+qdrant-client
+
+fastapi
+uvicorn
+feedparser
+telethon
